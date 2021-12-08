@@ -131,3 +131,5 @@ data/*
 !data/.gitkeep
 experiments/*
 !experiments/.gitkeep
+
+try.py
