@@ -7,6 +7,72 @@ import numpy as np
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
+from urllib.request import urlretrieve
+import shutil
+
+
+class ImageDrivingDataset(Dataset):
+    """Images of SullyChen's "07/01/2018 Driving Dataset" from https://github.com/SullyChen/driving-datasets"""
+
+    DATASET_URL = "https://nextcloud.univ-lille.fr/index.php/s/2CKyZzoLBPN4qLF/download/07012018.zip"
+    # VAL_URL = ""
+
+    def __init__(self, data_dir="data/driving_dataset", train=True, download=True, transform=None) -> None:
+        self.data_dir = data_dir
+        self.train = train
+
+        if not os.path.exists(self.data_dir):
+            if not download:
+                raise RuntimeError(
+                    'Dataset does not exist. You have to download it first by enabling download=True in argument.')
+            else:
+                print('Downloading dataset...')
+                self._download_and_extract()
+
+    def _download_and_extract(self):
+        if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir, exist_ok=True)
+
+        filepath = os.path.join(self.data_dir, "archive.zip")
+        download_url(
+            ImageDrivingDataset.DATASET_URL,
+            filepath
+        )
+        extract_archive(filepath)
+        os.remove(filepath)
+
+        print('\n##################\nDataset installed successfully.\n################')
+
+
+class TqdmUpTo(tqdm):
+    def update_to(self, b=1, bsize=1, tsize=None):
+        if tsize is not None:
+            self.total = tsize
+        self.update(b * bsize - self.n)
+
+
+def download_url(url, filepath):
+    directory = os.path.dirname(os.path.abspath(filepath))
+    os.makedirs(directory, exist_ok=True)
+    if os.path.exists(filepath):
+        print("Dataset already exists on the disk. Skipping download.")
+        return
+
+    with TqdmUpTo(
+        unit="B",
+        unit_scale=True,
+        unit_divisor=1024,
+        miniters=1,
+        desc=os.path.basename(filepath),
+    ) as t:
+        urlretrieve(url, filename=filepath, reporthook=t.update_to, data=None)
+        t.total = t.n
+
+
+def extract_archive(filepath):
+    extract_dir = os.path.dirname(os.path.abspath(filepath))
+    shutil.unpack_archive(filepath, extract_dir)
 
 
 class PilotNetDataset(Dataset):
