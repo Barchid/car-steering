@@ -22,6 +22,7 @@ class ImageDrivingDataset(Dataset):
         self.data_dir = data_dir
         self.train = train
 
+        # download and extract if not exist
         if not os.path.exists(self.data_dir):
             if not download:
                 raise RuntimeError(
@@ -29,6 +30,25 @@ class ImageDrivingDataset(Dataset):
             else:
                 print('Downloading dataset...')
                 self._download_and_extract()
+
+        # load list of data
+        self.data = self._load_data()  # format : List[Tuple(frame_path, angle)]
+        self.transform = transform
+
+    def _load_data(self):
+        filepath = os.path.join(self.data_dir, 'TODO', 'data.txt')
+        file = open(filepath, 'r')
+        lines = file.readlines()
+
+        data = []
+        for line in lines:
+            # format of lines is : "filename.jpg angle,year-mm-dd hr:min:sec:millise"
+            frame_filename, info = line.split()
+
+            frame_path = os.path.join(self.data_dir, 'TODO', frame_filename)
+            angle = float(info.split(sep=',')[0])
+
+            data.append((frame_path, angle))
 
     def _download_and_extract(self):
         if not os.path.exists(self.data_dir):
@@ -43,6 +63,39 @@ class ImageDrivingDataset(Dataset):
         os.remove(filepath)
 
         print('\n##################\nDataset installed successfully.\n################')
+
+    def __getitem__(self, index: int):
+        frame_path, angle = self.data[index]
+
+        # read the RGB image from the frame path
+        image = Image.open(frame_path)
+
+        if self.transform is not None:
+            image = self.transform(image)
+
+        return image, angle
+
+        for i in range(self.sequence):
+            path, gt = self.samples[self.ind_map[index] + i]
+            if np.abs(float(gt)) < 1e-5 and i != 0 and i != len(self.samples) - 1:
+                gt = 0.5 * (  # removing dataset anomalities
+                    float(self.samples[self.ind_map[index] + i - 1][1]) +
+                    float(self.samples[self.ind_map[index] + i + 1][1])
+                )
+            image = Image.open(self.path + path)
+            gt_val = float(gt) * np.pi / 180
+            if self.transform is not None:
+                image = self.transform(image)
+            images.append(image)
+            gts.append(torch.tensor(gt_val, dtype=image.dtype))
+
+        images = torch.stack(images, dim=3)
+        gts = torch.stack(gts, dim=0)
+
+        return images, gts
+
+    def __len__(self):
+        return len(self.data)
 
 
 class TqdmUpTo(tqdm):
