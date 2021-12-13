@@ -12,15 +12,33 @@ from urllib.request import urlretrieve
 import shutil
 
 
+class VideoDrivingDataset(Dataset):
+    def __init__(self, data_dir="data/driving_dataset", sequence=16, download=True, transform=None) -> None:
+        self.dataset = ImageDrivingDataset(data_dir=data_dir, download=download, transform=transform)
+        self.sequence = sequence
+
+    def __len__(self):
+        return len(self.dataset) // self.sequence
+
+    def __getitem__(self, index):
+        image_index = self.sequence * index
+
+        frames = angles = []
+        for i in range(image_index, image_index + self.sequence):
+            frame, angle = self.dataset[i]
+            frames.append(frame)
+            angles.append(angle)
+
+        return torch.tensor(frames), torch.tensor(angles)
+
+
 class ImageDrivingDataset(Dataset):
     """Images of SullyChen's "07/01/2018 Driving Dataset" from https://github.com/SullyChen/driving-datasets"""
 
     DATASET_URL = "https://nextcloud.univ-lille.fr/index.php/s/2CKyZzoLBPN4qLF/download/07012018.zip"
-    # VAL_URL = ""
 
-    def __init__(self, data_dir="data/driving_dataset", train=True, download=True, transform=None) -> None:
+    def __init__(self, data_dir="data/driving_dataset", download=True, transform=None) -> None:
         self.data_dir = data_dir
-        self.train = train
 
         # download and extract if not exist
         if not os.path.exists(self.data_dir):
@@ -74,25 +92,6 @@ class ImageDrivingDataset(Dataset):
             image = self.transform(image)
 
         return image, angle
-
-        for i in range(self.sequence):
-            path, gt = self.samples[self.ind_map[index] + i]
-            if np.abs(float(gt)) < 1e-5 and i != 0 and i != len(self.samples) - 1:
-                gt = 0.5 * (  # removing dataset anomalities
-                    float(self.samples[self.ind_map[index] + i - 1][1]) +
-                    float(self.samples[self.ind_map[index] + i + 1][1])
-                )
-            image = Image.open(self.path + path)
-            gt_val = float(gt) * np.pi / 180
-            if self.transform is not None:
-                image = self.transform(image)
-            images.append(image)
-            gts.append(torch.tensor(gt_val, dtype=image.dtype))
-
-        images = torch.stack(images, dim=3)
-        gts = torch.stack(gts, dim=0)
-
-        return images, gts
 
     def __len__(self):
         return len(self.data)
