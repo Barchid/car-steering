@@ -3,13 +3,54 @@
 
 import os
 import glob
+from typing import Optional
 import numpy as np
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data.dataloader import DataLoader
+from torch.utils.data.dataset import random_split
 from tqdm import tqdm
 from urllib.request import urlretrieve
 import shutil
+import pytorch_lightning as pl
+from torchvision import transforms
+
+
+class ImageDrivingDataModule(pl.LightningDataModule):
+    def __init__(self, batch_size: int, data_dir: str = "data/driving_dataset", height=256, width=455, **kwargs):
+        super().__init__()
+        self.batch_size = batch_size
+        self.data_dir = data_dir
+
+        # Data Augmentation strategy
+        self.transform = transforms.Compose([
+            transforms.CenterCrop((height, width)),
+            # transforms.RandomHorizontalFlip(),
+            # transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+    def prepare_data(self) -> None:
+        # Download the data needed
+        ImageDrivingDataset(self.data_dir, download=True)
+
+    def setup(self, stage: Optional[str] = None) -> None:
+        full_set = ImageDrivingDataset(data_dir=self.data_dir, transform=self.transform)
+
+        train_len = len(full_set) * 7 / 10  # 70% of dataset is for training
+        val_len = len(full_set) - train_len  # 30% of dataset is for validation
+        self.train_set, self.val_set = random_split(full_set, [train_len, val_len])
+
+    def train_dataloader(self):
+        return DataLoader(self.train_set, batch_size=self.batch_size, shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.val_set, batch_size=self.batch_size, shuffle=False)
+
+    def test_dataloader(self):
+        return DataLoader(self.val_set, batch_size=self.batch_size, shuffle=False)
 
 
 class VideoDrivingDataset(Dataset):
@@ -37,7 +78,7 @@ class ImageDrivingDataset(Dataset):
 
     DATASET_URL = "https://nextcloud.univ-lille.fr/index.php/s/2CKyZzoLBPN4qLF/download/07012018.zip"
 
-    def __init__(self, data_dir="data/driving_dataset", download=True, transform=None) -> None:
+    def __init__(self, data_dir="data/driving_dataset", download=True, transform=transforms.ToTensor()) -> None:
         self.data_dir = data_dir
 
         # download and extract if not exist
@@ -51,6 +92,7 @@ class ImageDrivingDataset(Dataset):
 
         # load list of data
         self.data = self._load_data()  # format : List[Tuple(frame_path, angle)]
+
         self.transform = transform
 
     def _load_data(self):
