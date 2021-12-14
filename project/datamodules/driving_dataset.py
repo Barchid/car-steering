@@ -96,7 +96,7 @@ class ImageDrivingDataset(Dataset):
         self.transform = transform
 
     def _load_data(self):
-        filepath = os.path.join(self.data_dir, 'TODO', 'data.txt')
+        filepath = os.path.join(self.data_dir, 'data.txt')
         file = open(filepath, 'r')
         lines = file.readlines()
 
@@ -105,7 +105,7 @@ class ImageDrivingDataset(Dataset):
             # format of lines is : "filename.jpg angle,year-mm-dd hr:min:sec:millise"
             frame_filename, info = line.split()
 
-            frame_path = os.path.join(self.data_dir, 'TODO', frame_filename)
+            frame_path = os.path.join(self.data_dir, 'data', frame_filename)
             angle = float(info.split(sep=',')[0])
 
             data.append((frame_path, angle))
