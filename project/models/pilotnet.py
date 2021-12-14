@@ -17,12 +17,20 @@ class PilotNet(nn.Module):
         """
         super(PilotNet, self).__init__()
 
-        # TODO: declare your model here
-        self.dummy_conv = ConvBN(in_channels, out_channels, kernel_size=3)  # remove this
+        # TODO: declare your model here (remove the dummy layers below)
+        self.conv = ConvBNAct(in_channels, 32, kernel_size=3)  # begin with in_channels
+        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.flat = nn.Flatten()
+        self.linear = nn.Linear(32, out_channels)  # ... and finish with out_channels
 
     def forward(self, frame):
-        result = self.dummy_conv(frame)  # remove this
-        return result  # TODO: output must be the angle (1 value)
+        # TODO: declare the forward pass of your model here (and remove the dummy layers)
+        x = self.conv(frame)
+        x = self.avg_pool(x)
+        x = self.flat(x)
+        angles = self.linear(x)
+
+        return angles  # TODO: output must be the angle (1 value)
 
 
 # Utility layers (don't hesitate to use it)
