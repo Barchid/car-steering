@@ -39,7 +39,7 @@ class ImageDrivingDataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None) -> None:
         full_set = ImageDrivingDataset(data_dir=self.data_dir, transform=self.transform)
 
-        train_len = len(full_set) * 7 / 10  # 70% of dataset is for training
+        train_len = int(len(full_set) * 7 / 10)  # 70% of dataset is for training
         val_len = len(full_set) - train_len  # 30% of dataset is for validation
         self.train_set, self.val_set = random_split(full_set, [train_len, val_len])
 
