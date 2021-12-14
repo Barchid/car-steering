@@ -103,12 +103,14 @@ class ImageDrivingDataset(Dataset):
         data = []
         for line in lines:
             # format of lines is : "filename.jpg angle,year-mm-dd hr:min:sec:millise"
-            frame_filename, info = line.split()
+            frame_filename, info, _ = line.split()
 
             frame_path = os.path.join(self.data_dir, 'data', frame_filename)
             angle = float(info.split(sep=',')[0])
 
             data.append((frame_path, angle))
+
+        return data
 
     def _download_and_extract(self):
         if not os.path.exists(self.data_dir):
