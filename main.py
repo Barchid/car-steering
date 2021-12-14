@@ -6,9 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import pytorch_lightning as pl
-from project.datamodules.nmnist import NMNISTDataModule
+from project.datamodules.driving_dataset import ImageDrivingDataModule
 
-from project.lenet5_module import Lenet5Module
+from project.driving_module import DrivingModule
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
         # TODO: add any data you want to report here
         # here, we put the model's hyperparameters and the resulting val accuracy
         report.write(
-            f"SpikingLeNet5 {args.timesteps} {args.bias} {args.neuron_model} {args.learning_rate}  {trainer.checkpoint_callback.best_model_score}\n")
+            f"PilotNet {args.learning_rate}  {trainer.checkpoint_callback.best_model_score}\n")
     elif args.mode == "lr_find":
         lr_finder = trainer.tuner.lr_find(module, datamodule=datamodule)
         fig = lr_finder.plot(suggest=True)
@@ -49,7 +49,7 @@ def create_module(args) -> pl.LightningModule:
     dict_args = vars(args)
 
     # TODO: you can change the module class here
-    module = Lenet5Module(**dict_args)
+    module = DrivingModule(**dict_args)
 
     return module
 
@@ -59,7 +59,7 @@ def create_datamodule(args) -> pl.LightningDataModule:
     dict_args = vars(args)
 
     # TODO: you can change the datamodule here
-    datamodule = NMNISTDataModule(**dict_args)
+    datamodule = ImageDrivingDataModule(**dict_args)
 
     return datamodule
 
@@ -82,14 +82,16 @@ def get_args():
     # Program args
     # TODO: you can add program-specific arguments here
     parser = ArgumentParser()
-    parser.add_argument('--mode', type=str, choices=["train", "validate", "lr_find"], default="train")
+    parser.add_argument('--mode', help="Defines what the program will do (training, validation or find optimal learning rate)",
+                        type=str, choices=["train", "validate", "lr_find"], default="train")
     parser.add_argument('--ckpt_path', type=str, default=None,
                         help="Path of a checkpoint file. Defaults to None, meaning the training/testing will start from scratch.")
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--timesteps', type=int, required=True)
+    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--height', help="Height of the input images", type=int, default=256)
+    parser.add_argument('--width', help="Width of the input images", type=int, default=455)
 
     # Args for model
-    parser = Lenet5Module.add_model_specific_args(parser)
+    parser = DrivingModule.add_model_specific_args(parser)
 
     # Args for Trainer
     parser = pl.Trainer.add_argparse_args(parser)
