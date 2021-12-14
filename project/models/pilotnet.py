@@ -18,11 +18,11 @@ class PilotNet(nn.Module):
         super(PilotNet, self).__init__()
 
         # TODO: declare your model here
-        pass
+        self.dummy_conv = ConvBN(in_channels, out_channels, kernel_size=3)  # remove this
 
     def forward(self, frame):
-
-        return None  # TODO: output must be the angle
+        result = self.dummy_conv(frame)  # remove this
+        return result  # TODO: output must be the angle (1 value)
 
 
 # Utility layers (don't hesitate to use it)
