@@ -16,7 +16,6 @@ class DrivingModule(pl.LightningModule):
         self.model = PilotNet(in_channels=3, out_channels=1)
 
     def forward(self, x):
-
         # (RGB frame) -> (predicted angle)
         angle = self.model(x)
 

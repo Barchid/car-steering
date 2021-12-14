@@ -15,6 +15,7 @@ from urllib.request import urlretrieve
 import shutil
 import pytorch_lightning as pl
 from torchvision import transforms
+import math
 
 
 class ImageDrivingDataModule(pl.LightningDataModule):
@@ -106,7 +107,13 @@ class ImageDrivingDataset(Dataset):
             frame_filename, info, _ = line.split()
 
             frame_path = os.path.join(self.data_dir, 'data', frame_filename)
+
+            # the paper by Nvidia uses the inverse of the turning radius,
+            # but steering wheel angle is proportional to the inverse of turning radius
+            # so the steering wheel angle in radians is used as the output
             angle = float(info.split(sep=',')[0])
+            angle = angle * math.pi / 180  # degrees to radians conversion (rad = deg * PI/180)
+            angle = np.array([angle], dtype=np.float32)
 
             data.append((frame_path, angle))
 
